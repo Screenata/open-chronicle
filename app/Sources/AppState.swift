@@ -28,8 +28,8 @@ final class AppState: ObservableObject {
             captureManager.start()
         }
 
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
+            Task { @MainActor [weak self] in
                 self?.refreshData()
                 self?.captureManager.runCleanup()
             }

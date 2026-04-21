@@ -69,8 +69,8 @@ final class CaptureManager: ObservableObject {
 
     private func scheduleTimer() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: captureIntervalSec, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+        timer = Timer.scheduledTimer(withTimeInterval: captureIntervalSec, repeats: true) { _ in
+            Task { @MainActor [weak self] in
                 self?.tick()
             }
         }
