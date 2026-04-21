@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: macos-14
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Build Swift app (release)
+        working-directory: app
+        run: swift build -c release --arch arm64 --arch x86_64
+
+      - name: Build MCP server
+        working-directory: mcp
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package .app bundle
+        run: |
+          APP_NAME="Chronicle.app"
+          APP_DIR="dist/$APP_NAME"
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          cp app/.build/apple/Products/Release/Chronicle "$APP_DIR/Contents/MacOS/Chronicle"
+          chmod +x "$APP_DIR/Contents/MacOS/Chronicle"
+          cat > "$APP_DIR/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleExecutable</key><string>Chronicle</string>
+            <key>CFBundleIdentifier</key><string>dev.openchronicle.Chronicle</string>
+            <key>CFBundleName</key><string>Chronicle</string>
+            <key>CFBundleDisplayName</key><string>Chronicle</string>
+            <key>CFBundleShortVersionString</key><string>${GITHUB_REF_NAME#v}</string>
+            <key>CFBundleVersion</key><string>${GITHUB_REF_NAME#v}</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>LSMinimumSystemVersion</key><string>14.0</string>
+            <key>LSUIElement</key><true/>
+            <key>NSHumanReadableCopyright</key><string>Open source, MIT licensed</string>
+          </dict>
+          </plist>
+          EOF
+          ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "dist/Chronicle.app.zip"
+
+      - name: Create MCP tarball
+        run: |
+          mkdir -p dist
+          tar -czf dist/mcp-server.tar.gz \
+            -C mcp \
+            --exclude node_modules \
+            --exclude .env \
+            dist src package.json package-lock.json tsconfig.json .env.example
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/Chronicle.app.zip
+            dist/mcp-server.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

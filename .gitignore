@@ -1,0 +1,25 @@
+# Swift
+app/.build/
+app/.swiftpm/
+
+# Node
+mcp/node_modules/
+mcp/dist/
+
+# macOS
+.DS_Store
+
+# Editor swap/backup files
+.*.swp
+.*.swo
+*~
+.idea/
+.vscode/
+
+# Environment (keep .env.example — it's the template)
+.env
+.env.local
+.env.*.local
+
+# Chronicle data
+.chronicle/

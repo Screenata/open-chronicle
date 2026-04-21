@@ -1,0 +1,77 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  swift-app:
+    name: Swift app (macOS)
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: app/.build
+          key: spm-${{ runner.os }}-${{ hashFiles('app/Package.swift') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Build (debug)
+        run: swift build
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chronicle-${{ github.sha }}
+          path: app/.build/release/Chronicle
+          if-no-files-found: error
+          retention-days: 14
+
+  mcp-server:
+    name: MCP server (Node)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-dist-${{ github.sha }}
+          path: mcp/dist
+          if-no-files-found: error
+          retention-days: 14
