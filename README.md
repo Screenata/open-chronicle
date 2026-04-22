@@ -2,14 +2,14 @@
 
 > **Give your AI coding agent photographic memory.**
 > Local screen capture → on-device OCR → LLM summaries → exposed to Claude Code and Codex CLI over MCP.
-> Nothing leaves your machine except the summarization call.
+> **Runs 100% offline** with Ollama or LM Studio — or plug in any cloud LLM (Anthropic / OpenAI / Fireworks).
 
 <p align="center">
   <a href="https://youtu.be/V75tnvIdovc" target="_blank">
     <img src="https://img.youtube.com/vi/V75tnvIdovc/maxresdefault.jpg" alt="Open Chronicle demo — click to watch" width="780">
   </a>
   <br/>
-  <em>▶️ <a href="https://youtu.be/V75tnvIdovc">Watch the 6-second demo</a></em>
+  <em>▶️ <a href="https://youtu.be/V75tnvIdovc">Watch the 60-second demo</a></em>
 </p>
 
 <p align="center">
@@ -43,9 +43,9 @@ AI coding agents forget your context the moment you switch apps. Open Chronicle 
 ┌──────────────────────┐       ┌──────────────────────────┐
 │   Swift menubar app  │       │   Node MCP process        │
 │                      │       │                           │
-│  • ScreenCaptureKit  │  SQL  │  • Vercel AI SDK          │
-│  • Apple Vision OCR  │◄────►│  • LLM summarization      │
-│  • Dedup, allowlist  │  ite  │  • MCP stdio server       │
+│  • CGWindowList      │  SQL  │  • Vercel AI SDK          │
+│  • Apple Vision OCR  │◄────►│  • Ollama / cloud LLM     │
+│  • Dedup + exclusions│  ite  │  • MCP stdio server       │
 └──────────────────────┘       └──────────────────────────┘
                                            ▲
                                            │  MCP (current_context,
@@ -152,7 +152,7 @@ Everything is under `~/.open-chronicle/`:
 - `screenshots/` — raw PNGs, auto-expire per retention setting
 - `mcp.log` — diagnostic log from the memory builder
 
-**Nothing is synced or uploaded.** The only outbound network call is to your chosen LLM provider during summarization. The API key stays in `mcp/.env` on your machine.
+**Nothing is synced or uploaded.** If you pick a cloud LLM (Anthropic / OpenAI / Fireworks), the only outbound network call is to that provider for text summaries. If you pick **Ollama** or **LM Studio**, there are **zero outbound network calls** — the entire pipeline runs on-device. Your API keys (if any) stay in `mcp/.env` on your machine.
 
 You can **wipe all data** at any time from Settings → Data → *Clear all data*.
 
