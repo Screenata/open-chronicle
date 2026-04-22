@@ -62,7 +62,13 @@ AI coding agents forget your context the moment you switch apps. Open Chronicle 
 3. **Summarize** — MCP server groups captures into 1-minute windows and asks an LLM for a 2-sentence summary
 4. **Serve** — Claude Code or Codex CLI calls the MCP server when you ask ambiguous questions, and answers with specific, grounded context
 
-Supported LLM providers: **Anthropic**, **OpenAI**, **Fireworks** (Kimi K2, DeepSeek, etc.) — switchable in Settings.
+Supported LLM providers:
+
+- **Anthropic**, **OpenAI**, **Fireworks** — cloud APIs
+- **Ollama**, **LM Studio** — fully local, no API key required
+- **OpenAI-Compatible (custom)** — any endpoint speaking the OpenAI API: Baseten, Groq, Together, DeepInfra, Perplexity, self-hosted vLLM / TGI, etc.
+
+All switchable from the Settings tab.
 
 ## Install
 
@@ -85,7 +91,7 @@ Restart Claude Code (or Codex) — that's it.
 - macOS 14+
 - Xcode Command Line Tools (`xcode-select --install`)
 - Node 20+
-- An API key from [Anthropic](https://console.anthropic.com), [OpenAI](https://platform.openai.com), or [Fireworks](https://fireworks.ai)
+- An API key from [Anthropic](https://console.anthropic.com), [OpenAI](https://platform.openai.com), or [Fireworks](https://fireworks.ai) — **or** a local [Ollama](https://ollama.ai) install for 100% offline summarization
 - [Claude Code](https://claude.ai/code) and/or [Codex CLI](https://github.com/openai/codex)
 
 ## Try it

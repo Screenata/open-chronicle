@@ -23,3 +23,6 @@ mcp/dist/
 
 # Chronicle data
 .chronicle/
+
+# Internal notes (not for public repo)
+team.md

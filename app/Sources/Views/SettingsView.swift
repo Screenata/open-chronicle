@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var llmProvider: Provider = .anthropic
     @State private var llmModel: String = ""
     @State private var llmApiKey: String = ""
+    @State private var llmBaseURL: String = ""
     @State private var llmSaved: Bool = false
     @State private var llmError: String?
 
@@ -54,6 +55,9 @@ struct SettingsView: View {
                 .onChange(of: llmProvider) { _, newProvider in
                     let env = Onboarding.readEnvFile()
                     llmApiKey = env.apiKeys[newProvider] ?? ""
+                    llmBaseURL = newProvider == .openaiCompatible
+                        ? (env.openaiCompatBaseURL.isEmpty ? newProvider.defaultBaseURL : env.openaiCompatBaseURL)
+                        : newProvider.defaultBaseURL
                     if llmModel.isEmpty || !env.apiKeys.keys.contains(newProvider) {
                         llmModel = newProvider.defaultModel
                     }
@@ -66,15 +70,37 @@ struct SettingsView: View {
                     .frame(width: 200)
             }
 
-            LabeledContent(llmProvider.apiKeyEnvVar) {
-                SecureField("", text: $llmApiKey)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 200)
+            if llmProvider == .openaiCompatible {
+                LabeledContent("Base URL") {
+                    TextField("https://api.example.com/v1", text: $llmBaseURL)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 200)
+                }
+                LabeledContent("API Key (optional)") {
+                    SecureField("", text: $llmApiKey)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 200)
+                }
+            } else if llmProvider.needsBaseURL {
+                LabeledContent("Server URL") {
+                    TextField(llmProvider.defaultBaseURL, text: $llmApiKey)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 200)
+                }
+            } else {
+                LabeledContent(llmProvider.apiKeyEnvVar) {
+                    SecureField("", text: $llmApiKey)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 200)
+                }
             }
 
             HStack {
                 Button("Save LLM Settings") { saveLLM() }
-                    .disabled(llmApiKey.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(
+                        (llmProvider.requiresApiKey && llmApiKey.trimmingCharacters(in: .whitespaces).isEmpty)
+                        || (llmProvider == .openaiCompatible && llmBaseURL.trimmingCharacters(in: .whitespaces).isEmpty)
+                    )
                 if llmSaved {
                     Label("Saved — restart MCP to apply", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
@@ -95,7 +121,12 @@ struct SettingsView: View {
         llmError = nil
         do {
             let model = llmModel.isEmpty ? nil : llmModel
-            try Onboarding.writeEnvFile(provider: llmProvider, apiKey: llmApiKey, model: model)
+            try Onboarding.writeEnvFile(
+                provider: llmProvider,
+                apiKey: llmApiKey,
+                baseURL: llmBaseURL,
+                model: model
+            )
             llmSaved = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { llmSaved = false }
         } catch {
@@ -341,6 +372,9 @@ struct SettingsView: View {
         llmProvider = env.provider
         llmModel = env.model
         llmApiKey = env.apiKeys[env.provider] ?? ""
+        llmBaseURL = env.provider == .openaiCompatible
+            ? env.openaiCompatBaseURL
+            : env.provider.defaultBaseURL
     }
 
     private func saveSetting(_ key: String, _ value: String) {

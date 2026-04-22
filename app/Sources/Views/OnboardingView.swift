@@ -6,6 +6,7 @@ struct OnboardingView: View {
     @State private var hasPermission = Onboarding.hasScreenRecordingPermission()
     @State private var provider: Provider = .anthropic
     @State private var apiKey: String = ""
+    @State private var baseURL: String = ""
     @State private var customModel: String = ""
     @State private var useCustomModel: Bool = false
     @State private var isInstalling = false
@@ -153,15 +154,48 @@ struct OnboardingView: View {
                 }
                 .pickerStyle(.menu)
                 .labelsHidden()
+                .onChange(of: provider) { _, newProvider in
+                    // Reset inputs when switching providers to avoid stale values.
+                    apiKey = ""
+                    baseURL = newProvider.defaultBaseURL
+                    if !useCustomModel {
+                        customModel = ""
+                    }
+                }
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("API Key").font(.caption).foregroundStyle(.secondary)
-                SecureField(provider.apiKeyEnvVar, text: $apiKey)
-                    .textFieldStyle(.roundedBorder)
-                Text("Stored in mcp/.env locally. Never transmitted anywhere except to \(provider.displayName).")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+            if provider == .openaiCompatible {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Base URL").font(.caption).foregroundStyle(.secondary)
+                    TextField("https://api.example.com/v1", text: $baseURL)
+                        .textFieldStyle(.roundedBorder)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("API Key (optional)").font(.caption).foregroundStyle(.secondary)
+                    SecureField("", text: $apiKey)
+                        .textFieldStyle(.roundedBorder)
+                    Text(provider.apiKeyHelp)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            } else if provider.needsBaseURL {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Server URL (optional)").font(.caption).foregroundStyle(.secondary)
+                    TextField(provider.defaultBaseURL, text: $apiKey)
+                        .textFieldStyle(.roundedBorder)
+                    Text(provider.apiKeyHelp)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("API Key").font(.caption).foregroundStyle(.secondary)
+                    SecureField(provider.apiKeyEnvVar, text: $apiKey)
+                        .textFieldStyle(.roundedBorder)
+                    Text(provider.apiKeyHelp)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -310,7 +344,11 @@ struct OnboardingView: View {
         case .apiKey:
             Button("Install") { startInstall() }
                 .buttonStyle(.borderedProminent)
-                .disabled(apiKey.trimmingCharacters(in: .whitespaces).isEmpty || selectedAgents.isEmpty)
+                .disabled(
+                    (provider.requiresApiKey && apiKey.trimmingCharacters(in: .whitespaces).isEmpty)
+                    || (provider == .openaiCompatible && baseURL.trimmingCharacters(in: .whitespaces).isEmpty)
+                    || selectedAgents.isEmpty
+                )
         case .install:
             if installError != nil {
                 Button("Retry") { startInstall() }
@@ -361,6 +399,7 @@ struct OnboardingView: View {
                 try Onboarding.writeEnvFile(
                     provider: provider,
                     apiKey: apiKey,
+                    baseURL: baseURL,
                     model: useCustomModel && !customModel.isEmpty ? customModel : nil
                 )
                 installLog.append("Wrote .env with \(provider.displayName) credentials")

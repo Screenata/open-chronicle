@@ -3,27 +3,79 @@ import CoreGraphics
 import Foundation
 
 enum Provider: String, CaseIterable, Identifiable {
-    case anthropic, openai, fireworks
+    case anthropic, openai, fireworks, ollama, lmstudio, openaiCompatible
+
     var id: String { rawValue }
+
     var displayName: String {
         switch self {
-        case .anthropic: return "Anthropic (Claude)"
+        case .anthropic: return "Anthropic"
         case .openai: return "OpenAI"
-        case .fireworks: return "Fireworks (Kimi K2)"
+        case .fireworks: return "Fireworks"
+        case .ollama: return "Ollama (local)"
+        case .lmstudio: return "LM Studio (local)"
+        case .openaiCompatible: return "OpenAI-Compatible (custom)"
         }
     }
+
     var defaultModel: String {
         switch self {
         case .anthropic: return "claude-haiku-4-5-20251001"
         case .openai: return "gpt-4o-mini"
         case .fireworks: return "accounts/fireworks/models/kimi-k2p6"
+        case .ollama: return "llama3.2"
+        case .lmstudio: return "qwen2.5-7b-instruct"
+        case .openaiCompatible: return ""
         }
     }
+
+    var defaultBaseURL: String {
+        switch self {
+        case .ollama: return "http://localhost:11434/v1"
+        case .lmstudio: return "http://localhost:1234/v1"
+        default: return ""
+        }
+    }
+
+    /// Env var name for the API key / URL this provider uses.
     var apiKeyEnvVar: String {
         switch self {
         case .anthropic: return "ANTHROPIC_API_KEY"
         case .openai: return "OPENAI_API_KEY"
         case .fireworks: return "FIREWORKS_API_KEY"
+        case .ollama: return "CHRONICLE_OLLAMA_URL"
+        case .lmstudio: return "CHRONICLE_LMSTUDIO_URL"
+        case .openaiCompatible: return "CHRONICLE_OPENAI_COMPAT_API_KEY"
+        }
+    }
+
+    /// Whether this provider needs an API key. Local ones don't.
+    var requiresApiKey: Bool {
+        switch self {
+        case .anthropic, .openai, .fireworks: return true
+        case .ollama, .lmstudio: return false
+        case .openaiCompatible: return false  // optional — some compatible endpoints require it, some don't
+        }
+    }
+
+    /// Whether this provider needs a custom base URL collected separately.
+    var needsBaseURL: Bool {
+        switch self {
+        case .ollama, .lmstudio, .openaiCompatible: return true
+        default: return false
+        }
+    }
+
+    var apiKeyHelp: String {
+        switch self {
+        case .ollama:
+            return "Ollama base URL. Leave blank for default. First: ollama pull llama3.2"
+        case .lmstudio:
+            return "LM Studio base URL. Leave blank for default. Start the local server in LM Studio first."
+        case .openaiCompatible:
+            return "Works with any OpenAI-compatible endpoint (Baseten, Groq, Together, vLLM, TGI, etc.). Provide the full v1 endpoint URL and an API key if required."
+        default:
+            return "Stored in mcp/.env locally. Never transmitted anywhere except to \(displayName)."
         }
     }
 }
@@ -127,7 +179,7 @@ enum Onboarding {
         print("[open-chronicle.onboarding] npm install complete")
     }
 
-    static func writeEnvFile(provider: Provider, apiKey: String, model: String?) throws {
+    static func writeEnvFile(provider: Provider, apiKey: String, baseURL: String = "", model: String?) throws {
         guard let dir = mcpDir() else { throw OnboardingError.repoNotFound }
         let envPath = dir.appendingPathComponent(".env")
 
@@ -137,6 +189,12 @@ enum Onboarding {
         for p in Provider.allCases {
             let v = p == provider ? apiKey : (existing.apiKeys[p] ?? "")
             if !v.isEmpty { keyLines.append("\(p.apiKeyEnvVar)=\(v)") }
+        }
+
+        // OpenAI-compatible needs a separate base URL.
+        let compatURL = provider == .openaiCompatible ? baseURL : existing.openaiCompatBaseURL
+        if !compatURL.isEmpty {
+            keyLines.append("CHRONICLE_OPENAI_COMPAT_URL=\(compatURL)")
         }
 
         let modelLine = "CHRONICLE_LLM_MODEL=\(model ?? provider.defaultModel)"
@@ -159,6 +217,7 @@ enum Onboarding {
         var provider: Provider
         var model: String
         var apiKeys: [Provider: String]
+        var openaiCompatBaseURL: String = ""
         var memoryIntervalMs: Int?
     }
 
@@ -186,6 +245,14 @@ enum Onboarding {
                 state.apiKeys[.openai] = value
             case "FIREWORKS_API_KEY":
                 state.apiKeys[.fireworks] = value
+            case "CHRONICLE_OLLAMA_URL":
+                state.apiKeys[.ollama] = value
+            case "CHRONICLE_LMSTUDIO_URL":
+                state.apiKeys[.lmstudio] = value
+            case "CHRONICLE_OPENAI_COMPAT_API_KEY":
+                state.apiKeys[.openaiCompatible] = value
+            case "CHRONICLE_OPENAI_COMPAT_URL":
+                state.openaiCompatBaseURL = value
             case "CHRONICLE_MEMORY_INTERVAL_MS":
                 state.memoryIntervalMs = Int(value)
             default:

@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
+import { openai, createOpenAI } from "@ai-sdk/openai";
 import { fireworks } from "@ai-sdk/fireworks";
 import { z } from "zod";
 import {
@@ -11,12 +11,15 @@ import {
 } from "./db.js";
 import { log } from "./logger.js";
 
-type Provider = "anthropic" | "openai" | "fireworks";
+type Provider = "anthropic" | "openai" | "fireworks" | "ollama" | "lmstudio" | "openaiCompatible";
 
 const DEFAULT_MODELS: Record<Provider, string> = {
   anthropic: "claude-haiku-4-5-20251001",
   openai: "gpt-4o-mini",
   fireworks: "accounts/fireworks/models/kimi-k2p6",
+  ollama: "llama3.2",
+  lmstudio: "qwen2.5-7b-instruct",
+  openaiCompatible: "",
 };
 
 function getModel() {
@@ -28,6 +31,24 @@ function getModel() {
       return openai(modelId);
     case "fireworks":
       return fireworks(modelId);
+    case "ollama": {
+      const baseURL = process.env.CHRONICLE_OLLAMA_URL || "http://localhost:11434/v1";
+      return createOpenAI({ baseURL, apiKey: "ollama" })(modelId);
+    }
+    case "lmstudio": {
+      const baseURL = process.env.CHRONICLE_LMSTUDIO_URL || "http://localhost:1234/v1";
+      return createOpenAI({ baseURL, apiKey: "lmstudio" })(modelId);
+    }
+    case "openaiCompatible": {
+      const baseURL = process.env.CHRONICLE_OPENAI_COMPAT_URL;
+      if (!baseURL) {
+        throw new Error(
+          "CHRONICLE_OPENAI_COMPAT_URL is required when provider=openaiCompatible"
+        );
+      }
+      const apiKey = process.env.CHRONICLE_OPENAI_COMPAT_API_KEY || "not-needed";
+      return createOpenAI({ baseURL, apiKey })(modelId);
+    }
     case "anthropic":
     default:
       return anthropic(modelId);
