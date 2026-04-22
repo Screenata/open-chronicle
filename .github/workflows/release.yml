@@ -6,14 +6,15 @@ on:
       - "v*"
   workflow_dispatch:
 
+# Minimal release workflow: publishes a GitHub Release with auto-generated
+# notes plus the default source archives. No pre-built binaries — the app
+# isn't code-signed / notarized, and distributing unsigned macOS apps would
+# fail for most users due to Gatekeeper. Install path is clone + swift build.
+
 jobs:
-  release:
-    name: Build and publish
+  verify:
+    name: Verify builds
     runs-on: macos-14
-
-    permissions:
-      contents: write
-
     steps:
       - uses: actions/checkout@v4
 
@@ -27,59 +28,29 @@ jobs:
           cache: npm
           cache-dependency-path: mcp/package-lock.json
 
-      - name: Build Swift app (release)
+      - name: Swift release build (sanity check)
         working-directory: app
-        run: swift build -c release --arch arm64 --arch x86_64
+        run: swift build -c release
 
-      - name: Build MCP server
+      - name: MCP typecheck
         working-directory: mcp
         run: |
           npm ci
-          npm run build
+          npx tsc --noEmit
 
-      - name: Package .app bundle
-        run: |
-          APP_NAME="Chronicle.app"
-          APP_DIR="dist/$APP_NAME"
-          mkdir -p "$APP_DIR/Contents/MacOS"
-          mkdir -p "$APP_DIR/Contents/Resources"
-          cp app/.build/apple/Products/Release/Chronicle "$APP_DIR/Contents/MacOS/Chronicle"
-          chmod +x "$APP_DIR/Contents/MacOS/Chronicle"
-          cat > "$APP_DIR/Contents/Info.plist" <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleExecutable</key><string>Chronicle</string>
-            <key>CFBundleIdentifier</key><string>dev.openchronicle.Chronicle</string>
-            <key>CFBundleName</key><string>Chronicle</string>
-            <key>CFBundleDisplayName</key><string>Chronicle</string>
-            <key>CFBundleShortVersionString</key><string>${GITHUB_REF_NAME#v}</string>
-            <key>CFBundleVersion</key><string>${GITHUB_REF_NAME#v}</string>
-            <key>CFBundlePackageType</key><string>APPL</string>
-            <key>LSMinimumSystemVersion</key><string>14.0</string>
-            <key>LSUIElement</key><true/>
-            <key>NSHumanReadableCopyright</key><string>Open source, MIT licensed</string>
-          </dict>
-          </plist>
-          EOF
-          ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "dist/Chronicle.app.zip"
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs: verify
+    permissions:
+      contents: write
 
-      - name: Create MCP tarball
-        run: |
-          mkdir -p dist
-          tar -czf dist/mcp-server.tar.gz \
-            -C mcp \
-            --exclude node_modules \
-            --exclude .env \
-            dist src package.json package-lock.json tsconfig.json .env.example
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/Chronicle.app.zip
-            dist/mcp-server.tar.gz
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

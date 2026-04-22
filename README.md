@@ -72,6 +72,8 @@ All switchable from the Settings tab.
 
 ## Install
 
+Install is source-based for now — the binary isn't code-signed / notarized yet, so Gatekeeper would block a downloaded `.app` for most users. Clone and build locally:
+
 ```bash
 git clone https://github.com/Screenata/open-chronicle
 cd open-chronicle/app
