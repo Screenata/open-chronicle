@@ -39,23 +39,9 @@ AI coding agents forget your context the moment you switch apps. Open Chronicle 
 
 ## How it works
 
-```
-┌──────────────────────┐       ┌──────────────────────────┐
-│   Swift menubar app  │       │   Node MCP process        │
-│                      │       │                           │
-│  • CGWindowList      │  SQL  │  • Vercel AI SDK          │
-│  • Apple Vision OCR  │◄────►│  • Ollama / cloud LLM     │
-│  • Dedup + exclusions│  ite  │  • MCP stdio server       │
-└──────────────────────┘       └──────────────────────────┘
-                                           ▲
-                                           │  MCP (current_context,
-                                           │       recent_memories,
-                                           │       search_memories)
-                                           ▼
-                                  ┌───────────────────────┐
-                                  │  Claude Code / Codex  │
-                                  └───────────────────────┘
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Open Chronicle architecture — Swift menubar app + Node MCP process connected via SQLite, serving memories to Claude Code and Codex CLI over MCP" width="920">
+</p>
 
 1. **Capture** — menubar app screenshots the frontmost editor/terminal/browser every few seconds
 2. **Extract** — Apple Vision OCRs each capture, on-device, no cloud

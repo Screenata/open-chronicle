@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Chronicle — System Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg: #f8fafc;
+      --c-canvas: #ffffff;
+      --c-border: #cbd5e1;
+      --c-text-main: #0f172a;
+      --c-text-sub: #64748b;
+      --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--c-bg);
+      padding: 40px;
+      min-height: 100vh;
+      color: var(--c-text-main);
+    }
+
+    .diagram-container { max-width: 1040px; margin: 0 auto; }
+
+    .diagram-canvas {
+      background: var(--c-canvas);
+      border: 1px solid var(--c-border);
+      padding: 32px;
+    }
+
+    .diagram-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--c-border);
+      padding-bottom: 16px;
+      margin-bottom: 32px;
+    }
+
+    .diagram-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--c-text-main);
+      margin-bottom: 4px;
+    }
+
+    .diagram-subtitle {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .badge-solid {
+      display: inline-block;
+      background: var(--c-text-main);
+      color: var(--c-canvas);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 4px 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 120px 1fr;
+      gap: 0;
+      align-items: stretch;
+      margin-bottom: 40px;
+    }
+
+    .panel {
+      border: 1px solid var(--c-border);
+      background: var(--c-canvas);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--c-bg);
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--c-text-main);
+    }
+
+    .panel-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-text-sub);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .component-list {
+      list-style: none;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--c-text-main);
+    }
+
+    .component-list li {
+      padding: 4px 0;
+    }
+
+    .panel-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--c-border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-text-sub);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .bridge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .bridge-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      background: var(--c-text-main);
+    }
+
+    .bridge-label {
+      position: relative;
+      background: var(--c-canvas);
+      padding: 6px 10px;
+      border: 1px solid var(--c-border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-text-sub);
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .bridge-arrow-left::before,
+    .bridge-arrow-right::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 0;
+      height: 0;
+      transform: translateY(-50%);
+    }
+
+    .bridge-arrow-left::before {
+      left: 6px;
+      border-right: 6px solid var(--c-text-main);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+
+    .bridge-arrow-right::after {
+      right: 6px;
+      border-left: 6px solid var(--c-text-main);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+
+    .mcp-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+      margin-top: 8px;
+    }
+
+    .mcp-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      margin: 16px 0;
+    }
+
+    .mcp-arrow-line {
+      width: 1px;
+      height: 32px;
+      background: var(--c-text-main);
+    }
+
+    .mcp-arrow-down {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 6px solid var(--c-text-main);
+    }
+
+    .tools-card {
+      border: 1px solid var(--c-border);
+      padding: 14px 18px;
+      background: var(--c-canvas);
+    }
+
+    .tools-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-text-sub);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .tools-card ul {
+      list-style: none;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--c-text-main);
+    }
+
+    .tools-card li {
+      padding: 2px 0;
+    }
+
+    .legend-line {
+      width: 28px;
+      height: 1px;
+      background: var(--c-text-main);
+      display: inline-block;
+      margin-right: 10px;
+      position: relative;
+      top: -3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="diagram-container">
+    <div class="diagram-canvas">
+      <div class="diagram-header">
+        <div>
+          <div class="diagram-title">Open Chronicle — System Architecture</div>
+          <div class="diagram-subtitle">v0.1 / local screen memory for AI coding agents</div>
+        </div>
+        <div class="badge-solid">MACOS / MIT</div>
+      </div>
+
+      <!-- Row 1: Swift + SQLite + Node -->
+      <div class="row">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Swift menubar app</div>
+            <div class="panel-tag">Process · 01</div>
+          </div>
+          <div class="panel-body">
+            <ul class="component-list">
+              <li>• CGWindowList capture</li>
+              <li>• Apple Vision OCR</li>
+              <li>• Dedup + exclusions</li>
+              <li>• Menubar UI + onboarding</li>
+            </ul>
+          </div>
+          <div class="panel-footer">Runs on-device</div>
+        </div>
+
+        <div class="bridge bridge-arrow-left bridge-arrow-right">
+          <div class="bridge-line"></div>
+          <div class="bridge-label">
+            SQLITE<br>WAL mode
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Node MCP process</div>
+            <div class="panel-tag">Process · 02</div>
+          </div>
+          <div class="panel-body">
+            <ul class="component-list">
+              <li>• Vercel AI SDK</li>
+              <li>• Ollama / LM Studio</li>
+              <li>• Or cloud LLM (Anthropic / OpenAI / Fireworks)</li>
+              <li>• MCP stdio server</li>
+            </ul>
+          </div>
+          <div class="panel-footer">Spawned by agent</div>
+        </div>
+      </div>
+
+      <!-- MCP tools card centered below the node panel -->
+      <div class="mcp-row">
+        <div></div>
+        <div>
+          <div class="tools-card">
+            <div class="tools-label">MCP Tools</div>
+            <ul>
+              <li>current_context()</li>
+              <li>recent_memories(limit)</li>
+              <li>search_memories(query)</li>
+            </ul>
+          </div>
+
+          <div class="mcp-arrow">
+            <div class="mcp-arrow-line"></div>
+            <div class="mcp-arrow-down"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Claude Code / Codex CLI</div>
+              <div class="panel-tag">Consumer</div>
+            </div>
+            <div class="panel-body">
+              <ul class="component-list">
+                <li>• Auto-invokes Chronicle on ambiguous questions</li>
+                <li>• Grounded answers from user's recent screen</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

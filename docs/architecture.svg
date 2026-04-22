@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif">
+  <style>
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; }
+    .panel-header { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1; }
+    .title { font-size: 15px; font-weight: 600; fill: #0f172a; }
+    .subtitle { font-size: 10px; font-weight: 500; fill: #64748b; letter-spacing: 0.08em; text-transform: uppercase; }
+    .component-label { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; fill: #0f172a; }
+    .bullet { fill: #0f172a; }
+    .connector { stroke: #0f172a; stroke-width: 1.25; fill: none; }
+    .connector-label { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; fill: #64748b; letter-spacing: 0.04em; }
+    .tool-name { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; fill: #0f172a; }
+    .accent-badge { fill: #0f172a; }
+    .accent-badge-text { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; fill: #ffffff; letter-spacing: 0.05em; }
+    .section-divider { stroke: #cbd5e1; stroke-width: 1; }
+  </style>
+
+  <!-- Canvas frame + header -->
+  <rect x="20" y="20" width="960" height="520" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="20" y1="72" x2="980" y2="72" class="section-divider"/>
+  <text x="40" y="48" class="title">Open Chronicle — System Architecture</text>
+  <text x="40" y="64" class="subtitle">v0.1 / local screen memory for AI coding agents</text>
+  <rect x="878" y="34" width="82" height="22" class="accent-badge"/>
+  <text x="919" y="49" class="accent-badge-text" text-anchor="middle">MACOS / MIT</text>
+
+  <!-- Swift menubar app panel -->
+  <rect x="60" y="108" width="380" height="196" class="panel"/>
+  <rect x="60" y="108" width="380" height="32" class="panel-header"/>
+  <text x="76" y="129" class="title">Swift menubar app</text>
+  <text x="400" y="129" class="subtitle" text-anchor="end">PROCESS · 01</text>
+
+  <text x="76" y="168" class="component-label">• CGWindowList capture</text>
+  <text x="76" y="196" class="component-label">• Apple Vision OCR</text>
+  <text x="76" y="224" class="component-label">• Dedup + exclusions</text>
+  <text x="76" y="252" class="component-label">• Menubar UI + onboarding</text>
+  <line x1="60" y1="268" x2="440" y2="268" class="section-divider"/>
+  <text x="76" y="286" class="subtitle">RUNS ON-DEVICE</text>
+
+  <!-- Node MCP process panel -->
+  <rect x="560" y="108" width="380" height="196" class="panel"/>
+  <rect x="560" y="108" width="380" height="32" class="panel-header"/>
+  <text x="576" y="129" class="title">Node MCP process</text>
+  <text x="900" y="129" class="subtitle" text-anchor="end">PROCESS · 02</text>
+
+  <text x="576" y="168" class="component-label">• Vercel AI SDK</text>
+  <text x="576" y="196" class="component-label">• Ollama / LM Studio</text>
+  <text x="576" y="224" class="component-label">• Or cloud LLM (Anthropic / OpenAI / Fireworks)</text>
+  <text x="576" y="252" class="component-label">• MCP stdio server</text>
+  <line x1="560" y1="268" x2="940" y2="268" class="section-divider"/>
+  <text x="576" y="286" class="subtitle">SPAWNED BY AGENT</text>
+
+  <!-- SQLite connector between the two process panels -->
+  <line x1="440" y1="206" x2="560" y2="206" class="connector"/>
+  <polygon points="445,206 453,202 453,210" class="bullet"/>
+  <polygon points="555,206 547,202 547,210" class="bullet"/>
+  <rect x="472" y="190" width="56" height="32" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="500" y="203" class="connector-label" text-anchor="middle">SQLITE</text>
+  <text x="500" y="216" class="connector-label" text-anchor="middle">WAL</text>
+
+  <!-- MCP connector going down to the agent panel -->
+  <line x1="750" y1="304" x2="750" y2="412" class="connector"/>
+  <polygon points="750,408 746,400 754,400" class="bullet"/>
+  <polygon points="750,308 746,316 754,316" class="bullet"/>
+
+  <!-- MCP tool list card -->
+  <rect x="600" y="330" width="300" height="72" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="614" y="350" class="subtitle">MCP TOOLS</text>
+  <text x="614" y="368" class="tool-name">current_context()</text>
+  <text x="614" y="382" class="tool-name">recent_memories(limit)</text>
+  <text x="614" y="396" class="tool-name">search_memories(query)</text>
+
+  <!-- Agent panel -->
+  <rect x="560" y="412" width="380" height="100" class="panel"/>
+  <rect x="560" y="412" width="380" height="32" class="panel-header"/>
+  <text x="576" y="433" class="title">Claude Code / Codex CLI</text>
+  <text x="900" y="433" class="subtitle" text-anchor="end">CONSUMER</text>
+  <text x="576" y="468" class="component-label">• Auto-invokes Chronicle on ambiguous questions</text>
+  <text x="576" y="492" class="component-label">• Grounded answers from user's recent screen</text>
+
+  <!-- Left-side legend: data flow arrows -->
+  <rect x="60" y="412" width="380" height="100" class="panel"/>
+  <rect x="60" y="412" width="380" height="32" class="panel-header"/>
+  <text x="76" y="433" class="title">Data flow</text>
+  <text x="400" y="433" class="subtitle" text-anchor="end">LEGEND</text>
+  <line x1="76" y1="462" x2="104" y2="462" class="connector"/>
+  <polygon points="100,462 94,458 94,466" class="bullet"/>
+  <text x="114" y="466" class="component-label">Swift → SQLite → Node</text>
+  <line x1="76" y1="486" x2="104" y2="486" class="connector"/>
+  <polygon points="100,486 94,482 94,490" class="bullet"/>
+  <text x="114" y="490" class="component-label">Agent → MCP tools → response</text>
+</svg>
