@@ -9,7 +9,7 @@
     <img src="https://img.youtube.com/vi/V75tnvIdovc/maxresdefault.jpg" alt="Open Chronicle demo — click to watch" width="780">
   </a>
   <br/>
-  <em>▶️ <a href="https://youtu.be/V75tnvIdovc">Watch the 60-second demo</a></em>
+  <em>▶️ <a href="https://youtu.be/V75tnvIdovc">Watch the 6-second demo</a></em>
 </p>
 
 <p align="center">
